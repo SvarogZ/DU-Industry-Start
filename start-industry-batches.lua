@@ -2,7 +2,7 @@
 -- unit.start --------------------
 ----------------------------------
 local mainBoard = true --export
-local numBatches = 1 --export
+local numBatches = 10 --export
 local hardStop = true --export
 local allowIngredientLoss = false --export
 local languageRu = true --export
@@ -16,7 +16,7 @@ local startedStatusFactories = {} -- to start it one time
 
 ----------------------------------
 -- HTML module -------------------
-local font_size = 5 --export: font size for the table
+local font_size = 4 --export: font size for the table
 local font_color = "black" --export: font color for the table
 local screen_color = "#979A9A" --export: screen background color
 local table_border_color = "black" --export: table border color
@@ -81,13 +81,13 @@ local htmlStyle = [[<style>
 		text-align:center;
 	}
 </style>
-<div class="screen"></div>
 ]]
-local tableTemplate = "<table><tr><th style='width:10vw'>N</th><th style='width:10vw'>id</th><th style='width:30vw'>class</th><th style='width:30vw'>status</th><th style='width:10vw'>done</th><th>time</th></tr><tbody class='zebra'>%s</tbody></table>"
+local backgroundHtml = "<div class='screen'></div>"
+local tableTemplate = "<table><tr><th style='width:10vw'>N</th><th style='width:10vw'>id</th><th style='width:25vw'>class</th><th style='width:35vw'>status</th><th style='width:10vw'>done</th><th>time</th></tr><tbody class='zebra'>%s</tbody></table>"
 if languageRu then
-	tableTemplate = "<table><tr><th style='width:10vw'>N</th><th style='width:10vw'>id</th><th style='width:30vw'>класс</th><th style='width:30vw'>статус</th><th style='width:10vw'>время</th><th>time</th></tr><tbody class='zebra'>%s</tbody></table>"
+	tableTemplate = "<table><tr><th style='width:10vw'>N</th><th style='width:10vw'>id</th><th style='width:25vw'>класс</th><th style='width:35vw'>статус</th><th style='width:10vw'>сделано</th><th>время</th></tr><tbody class='zebra'>%s</tbody></table>"
 end
-local rowTemplate = "<tr><td class='cell'>%d</td><td class='cell'>%d</td><td class='cell'>%s</td><td class='cell'>%s</td><td class='cell'>%d</td><td class='cell'>%s</td></tr>"
+local rowTemplate = "<tr><td class='cell'>%d</td><td class='cell'>%d</td><td class='cell'>%s</td><td class='cell'>%s</td><td class='cell'>%s</td><td class='cell'>%s</td></tr>"
 local messageTemplate = "<div class='message'>%s</div>"
 -- HTML module -------------------
 ----------------------------------
@@ -136,7 +136,7 @@ local function initiateSlots()
 			 text = "No industry connected!"
 		end
 		system.showScreen(1)
-		system.setScreen(htmlStyle .. string.format(messageTemplate, text)
+		system.setScreen(htmlStyle .. string.format(messageTemplate, text))
 		error(text)
 	end
 	
@@ -205,12 +205,18 @@ end
 
 local function showInfo()
 	if screens[1] then
+		local n = 0
+		if databanks[1] then
+			n = databanks[1].getIntValue("numBatches")
+		else
+			n = numBatches
+		end
 		local htmlRows = {}
 		for k, v in ipairs(factories) do
-			table.insert(htmlRows,string.format(rowTemplate,k,v.getId(),v.getElementClass(),v.getStatus(),v.getCycleCountSinceStartup(),dateFormat(v.getUptime())))
+			table.insert(htmlRows,string.format(rowTemplate,k,v.getId(),v.getElementClass(),v.getStatus(),v.getCycleCountSinceStartup().."/"..n,dateFormat(v.getUptime())))
 		end
 
-		screens[1].setHTML(htmlStyle..string.format(tableTemplate,table.concat(htmlRows)))
+		screens[1].setHTML(htmlStyle .. backgroundHtml .. string.format(tableTemplate,table.concat(htmlRows)))
 	end
 end
 
@@ -233,7 +239,17 @@ function update()
 end
 
 function stop()
-	system.setScreen(string.format(messageTemplate, "")
+	local text = ""
+	if languageRu then
+		 text = "Скрипт остановлен"
+	else
+		 text = "Script stopped"
+	end
+	if screens[1] then
+		screens[1].setHTML(htmlStyle .. backgroundHtml .. string.format(messageTemplate, text))
+	else
+		system.print(text)
+	end
 end
 -- functions ---------------------
 ----------------------------------
@@ -252,10 +268,14 @@ unit.setTimer("update", updateTime)
 -- code --------------------------
 ----------------------------------
 
+
+
 ----------------------------------
 -- unit.tick('update') -----------
 ----------------------------------
 update()
+
+
 
 ----------------------------------
 -- unit.stop ---------------------
