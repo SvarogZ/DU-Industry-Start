@@ -216,7 +216,9 @@ end
 
 function update()
 	if getAllIndustryStarted() then
-		unit.stopTimer("update")
+		if not screens[1] then
+			unit.stopTimer("update")
+		end
 	else
 		local n = 0
 		if databanks[1] then
